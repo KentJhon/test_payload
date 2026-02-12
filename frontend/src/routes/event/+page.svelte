@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>About - Veent</title>
+	<title>Event - Veent</title>
 </svelte:head>
 
 <script lang='ts'>
@@ -9,9 +9,9 @@
 </script>
 
 <ul>
-	{#each data.posts as d}
+	{#each data.event as d}
 		<li>
-			{d.title} {d.content}
+			{d.title} {d.content} {d.Evet_date}
 		</li>
 	{/each}
 </ul>
