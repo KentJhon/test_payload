@@ -13,7 +13,9 @@
 
 	const { children }: Props = $props();
 
-	const isTicketGenerator = $derived($page.url.pathname === '/ticket-generator');
+	const hideFooter = $derived(
+		$page.url.pathname === '/ticket-generator' || $page.url.pathname === '/dev-chat'
+	);
 </script>
 
 <div class="flex min-h-screen flex-col bg-gray-50">
@@ -21,7 +23,7 @@
 	<main class="pt-16 flex-1">
 		{@render children()}
 	</main>
-	{#if !isTicketGenerator}
+	{#if !hideFooter}
 		<Footer />
 	{/if}
 	<ToastContainer />

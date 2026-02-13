@@ -1,60 +1,352 @@
+<script lang="ts">
+	import { onMount, tick } from 'svelte';
+	import { getMessages, sendMessage } from '$lib/api/messages';
+	import { showToast } from '$lib/stores/toast.svelte';
+	import type { PayloadMessage } from '$lib/types/payload';
+
+	let username = $state('');
+	let usernameInput = $state('');
+	let messages = $state<PayloadMessage[]>([]);
+	let newMessage = $state('');
+	let loading = $state(true);
+	let sending = $state(false);
+	let pollInterval = $state<ReturnType<typeof setInterval> | null>(null);
+	let messageContainer: HTMLDivElement;
+
+	onMount(() => {
+		const stored = localStorage.getItem('dev-chat-username');
+		if (stored) {
+			username = stored;
+			startChat();
+		}
+		return () => {
+			if (pollInterval) clearInterval(pollInterval);
+		};
+	});
+
+	function joinChat(e: SubmitEvent) {
+		e.preventDefault();
+		const trimmed = usernameInput.trim();
+		if (!trimmed) return;
+		username = trimmed;
+		localStorage.setItem('dev-chat-username', trimmed);
+		startChat();
+	}
+
+	function changeUsername() {
+		if (pollInterval) clearInterval(pollInterval);
+		pollInterval = null;
+		localStorage.removeItem('dev-chat-username');
+		username = '';
+		usernameInput = '';
+		messages = [];
+		loading = true;
+	}
+
+	async function fetchMessages() {
+		try {
+			const res = await getMessages({ limit: 100, sort: 'createdAt' });
+			messages = res.docs;
+		} catch {
+			// Silent fail on poll errors to avoid toast spam
+		} finally {
+			loading = false;
+		}
+	}
+
+	function startChat() {
+		fetchMessages().then(() => scrollToBottom());
+		pollInterval = setInterval(async () => {
+			const prevCount = messages.length;
+			await fetchMessages();
+			if (messages.length > prevCount) {
+				scrollToBottom();
+			}
+		}, 3000);
+	}
+
+	async function scrollToBottom() {
+		await tick();
+		if (messageContainer) {
+			messageContainer.scrollTop = messageContainer.scrollHeight;
+		}
+	}
+
+	async function handleSend(e: SubmitEvent) {
+		e.preventDefault();
+		const trimmed = newMessage.trim();
+		if (!trimmed || sending) return;
+
+		sending = true;
+		try {
+			await sendMessage(username, trimmed);
+			newMessage = '';
+			await fetchMessages();
+			scrollToBottom();
+		} catch {
+			showToast('error', 'Failed to send', 'Could not send your message. Please try again.');
+		} finally {
+			sending = false;
+		}
+	}
+
+	function formatTime(dateStr: string): string {
+		const date = new Date(dateStr);
+		const now = new Date();
+		const isToday = date.toDateString() === now.toDateString();
+
+		if (isToday) {
+			return date.toLocaleTimeString('en-US', {
+				hour: 'numeric',
+				minute: '2-digit',
+				hour12: true
+			});
+		}
+		return date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true
+		});
+	}
+</script>
+
 <svelte:head>
 	<title>Dev Chat - Veent</title>
 </svelte:head>
 
-<!-- Hero Header -->
-<section class="relative overflow-hidden bg-slate-900 py-24 text-white">
-	<div class="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-transparent to-purple-600/10"></div>
-	<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-		<div class="mx-auto max-w-3xl text-center">
-			<p class="mb-4 text-sm font-semibold uppercase tracking-wider text-indigo-400">Community</p>
-			<h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">Dev Chat</h1>
-			<p class="mt-6 text-lg leading-relaxed text-gray-400">
-				A space for developers to collaborate and discuss.
-			</p>
+{#if !username}
+	<!-- USERNAME ENTRY SCREEN -->
+	<section class="relative overflow-hidden bg-slate-900 py-24 text-white">
+		<div
+			class="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-transparent to-purple-600/10"
+		></div>
+		<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<div class="mx-auto max-w-3xl text-center">
+				<p class="mb-4 text-sm font-semibold uppercase tracking-wider text-indigo-400">
+					Community
+				</p>
+				<h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">Dev Chat</h1>
+				<p class="mt-6 text-lg leading-relaxed text-gray-400">
+					A space for developers to collaborate and discuss in real time.
+				</p>
+			</div>
 		</div>
-	</div>
-</section>
+	</section>
 
-<!-- Coming Soon -->
-<section class="bg-white py-20">
-	<div class="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
-		<div class="rounded-2xl border border-gray-100 bg-white p-12 shadow-sm">
-			<!-- Chat icon -->
-			<div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25">
-				<svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-				</svg>
-			</div>
+	<section class="bg-white py-20">
+		<div class="mx-auto max-w-md px-4 sm:px-6 lg:px-8">
+			<div class="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+				<div
+					class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25"
+				>
+					<svg
+						class="h-8 w-8 text-white"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="1.5"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+						/>
+					</svg>
+				</div>
 
-			<h2 class="text-2xl font-bold text-gray-900">Coming Soon</h2>
-			<p class="mx-auto mt-4 max-w-md leading-relaxed text-gray-500">
-				We're building a developer chat space where you can discuss features,
-				report issues, and collaborate with the team. Stay tuned!
-			</p>
+				<h2 class="text-center text-xl font-bold text-gray-900">Join the conversation</h2>
+				<p class="mt-2 text-center text-sm text-gray-500">
+					Choose a display name to get started
+				</p>
 
-			<!-- Status badge -->
-			<div class="mt-8 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-5 py-2.5 text-sm font-medium text-indigo-700">
-				<span class="h-2 w-2 animate-pulse rounded-full bg-indigo-500"></span>
-				In Development
-			</div>
-
-			<!-- Feature preview -->
-			<div class="mx-auto mt-10 grid max-w-md gap-4 text-left sm:grid-cols-2">
-				{#each [
-					{ icon: 'M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z', title: 'Real-time Chat' },
-					{ icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', title: 'Team Channels' },
-					{ icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', title: 'Code Sharing' },
-					{ icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', title: 'Notifications' }
-				] as feature}
-					<div class="flex items-center gap-3 rounded-xl border border-gray-100 p-3">
-						<svg class="h-5 w-5 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d={feature.icon} />
+				<form onsubmit={joinChat} class="mt-6">
+					<label for="username" class="mb-2 block text-sm font-medium text-gray-700"
+						>Display Name</label
+					>
+					<input
+						id="username"
+						type="text"
+						bind:value={usernameInput}
+						required
+						maxlength={50}
+						class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+						placeholder="Enter your name"
+					/>
+					<button
+						type="submit"
+						class="group mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all hover:shadow-xl hover:shadow-indigo-600/30 hover:brightness-110"
+					>
+						Join Chat
+						<svg
+							class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M13 7l5 5m0 0l-5 5m5-5H6"
+							/>
 						</svg>
-						<span class="text-sm font-medium text-gray-700">{feature.title}</span>
-					</div>
-				{/each}
+					</button>
+				</form>
 			</div>
 		</div>
-	</div>
-</section>
+	</section>
+{:else}
+	<!-- CHAT INTERFACE -->
+	<section class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50">
+		<!-- Chat header -->
+		<div class="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
+			<div class="mx-auto flex max-w-4xl items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md"
+					>
+						<svg
+							class="h-5 w-5 text-white"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="1.5"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+							/>
+						</svg>
+					</div>
+					<div>
+						<h1 class="text-lg font-bold text-gray-900">Dev Chat</h1>
+						<p class="text-xs text-gray-500">
+							Logged in as <span class="font-semibold text-indigo-600">{username}</span>
+						</p>
+					</div>
+				</div>
+				<button
+					onclick={changeUsername}
+					class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+				>
+					Change Name
+				</button>
+			</div>
+		</div>
+
+		<!-- Messages area -->
+		<div bind:this={messageContainer} class="flex-1 overflow-y-auto px-4 py-6">
+			<div class="mx-auto max-w-4xl space-y-4">
+				{#if loading}
+					<div class="flex justify-center py-12">
+						<div
+							class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"
+						></div>
+					</div>
+				{:else if messages.length === 0}
+					<div
+						class="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-16 text-center"
+					>
+						<svg
+							class="mx-auto h-12 w-12 text-gray-300"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="1"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+							/>
+						</svg>
+						<p class="mt-4 text-gray-500">No messages yet. Be the first to say something!</p>
+					</div>
+				{:else}
+					{#each messages as message (message.id)}
+						{@const isOwn = message.sender === username}
+						<div class="flex {isOwn ? 'justify-end' : 'justify-start'}">
+							<div class="max-w-[75%]">
+								{#if !isOwn}
+									<p class="mb-1 ml-3 text-xs font-semibold text-gray-500">
+										{message.sender}
+									</p>
+								{/if}
+								<div
+									class="rounded-2xl px-4 py-3 shadow-sm {isOwn
+										? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white'
+										: 'border border-gray-100 bg-white text-gray-900'}"
+								>
+									<p class="whitespace-pre-wrap text-sm leading-relaxed">
+										{message.content}
+									</p>
+								</div>
+								<p
+									class="mt-1 text-xs text-gray-400 {isOwn
+										? 'mr-3 text-right'
+										: 'ml-3'}"
+								>
+									{formatTime(message.createdAt)}
+								</p>
+							</div>
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</div>
+
+		<!-- Message input -->
+		<div class="border-t border-gray-200 bg-white px-4 py-4">
+			<form onsubmit={handleSend} class="mx-auto flex max-w-4xl gap-3">
+				<input
+					type="text"
+					bind:value={newMessage}
+					placeholder="Type a message..."
+					maxlength={1000}
+					class="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+				/>
+				<button
+					type="submit"
+					disabled={sending || !newMessage.trim()}
+					class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all hover:shadow-xl hover:shadow-indigo-600/30 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{#if sending}
+						<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+					{:else}
+						<svg
+							class="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+							/>
+						</svg>
+					{/if}
+					Send
+				</button>
+			</form>
+		</div>
+	</section>
+{/if}
