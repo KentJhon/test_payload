@@ -11,7 +11,7 @@
 	let loading = $state(true);
 	let sending = $state(false);
 	let pollInterval = $state<ReturnType<typeof setInterval> | null>(null);
-	let messageContainer: HTMLDivElement;
+	let messageContainer = $state<HTMLDivElement>(undefined!);
 
 	onMount(() => {
 		const stored = localStorage.getItem('dev-chat-username');
