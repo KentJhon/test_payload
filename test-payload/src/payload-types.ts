@@ -72,6 +72,7 @@ export interface Config {
     posts: Post;
     event: Event;
     messages: Message;
+    'ticket-templates': TicketTemplate;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     event: EventSelect<false> | EventSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
+    'ticket-templates': TicketTemplatesSelect<false> | TicketTemplatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -200,6 +202,62 @@ export interface Message {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ticket-templates".
+ */
+export interface TicketTemplate {
+  id: number;
+  name: string;
+  backgroundImage?: (number | null) | Media;
+  ticketSettings:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  elements:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  labelConfig?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  csvData?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  csvHeaders?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -241,6 +299,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'messages';
         value: number | Message;
+      } | null)
+    | ({
+        relationTo: 'ticket-templates';
+        value: number | TicketTemplate;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -352,6 +414,21 @@ export interface EventSelect<T extends boolean = true> {
 export interface MessagesSelect<T extends boolean = true> {
   sender?: T;
   content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ticket-templates_select".
+ */
+export interface TicketTemplatesSelect<T extends boolean = true> {
+  name?: T;
+  backgroundImage?: T;
+  ticketSettings?: T;
+  elements?: T;
+  labelConfig?: T;
+  csvData?: T;
+  csvHeaders?: T;
   updatedAt?: T;
   createdAt?: T;
 }

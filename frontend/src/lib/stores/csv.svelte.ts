@@ -17,6 +17,11 @@ export function loadCSV(text: string) {
 	csvHeaders = result.headers;
 }
 
+export function setCsvDirect(data: Record<string, string>[], headers: string[]) {
+	csvData = data;
+	csvHeaders = headers;
+}
+
 export function clearCSV() {
 	csvData = [];
 	csvHeaders = [];

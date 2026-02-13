@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000';
+export const BASE_URL = import.meta.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000';
 
 export async function payloadFetch<T>(
 	endpoint: string,
@@ -6,16 +6,19 @@ export async function payloadFetch<T>(
 ): Promise<T> {
 	const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
 
+	const isFormData = options?.body instanceof FormData;
+
 	const res = await fetch(url, {
+		...options,
 		headers: {
-			'Content-Type': 'application/json',
+			...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 			...options?.headers
-		},
-		...options
+		}
 	});
 
 	if (!res.ok) {
-		throw new Error(`API error: ${res.status} ${res.statusText}`);
+		const errorBody = await res.text().catch(() => '');
+		throw new Error(`API error: ${res.status} ${res.statusText} - ${errorBody}`);
 	}
 
 	return res.json();

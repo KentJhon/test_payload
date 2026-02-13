@@ -1,6 +1,11 @@
-import type { TicketTemplate, TicketSettings } from '$lib/types/ticket';
-
-const STORAGE_KEY = 'veenttix_templates';
+import type { TicketTemplate, TicketSettings, TicketElement, LabelConfig } from '$lib/types/ticket';
+import type { PayloadTicketTemplate } from '$lib/types/payload';
+import {
+	getTemplates,
+	createTemplate,
+	deleteTemplateById,
+	uploadBackgroundImage
+} from '$lib/api/templates';
 
 const BUILT_IN_TEMPLATES: TicketTemplate[] = [
 	{
@@ -32,51 +37,88 @@ const BUILT_IN_TEMPLATES: TicketTemplate[] = [
 	}
 ];
 
-function loadUserTemplates(): TicketTemplate[] {
+let userTemplates = $state<PayloadTicketTemplate[]>([]);
+let isLoading = $state(false);
+let hasFetched = $state(false);
+
+export function getBuiltInTemplates(): TicketTemplate[] {
+	return BUILT_IN_TEMPLATES;
+}
+
+export function getUserTemplates(): PayloadTicketTemplate[] {
+	return userTemplates;
+}
+
+export function getIsLoading() {
+	return isLoading;
+}
+
+export function getHasFetched() {
+	return hasFetched;
+}
+
+export function getBuiltInTemplate(id: string): TicketTemplate | undefined {
+	return BUILT_IN_TEMPLATES.find((t) => t.id === id);
+}
+
+export async function fetchUserTemplates(): Promise<void> {
+	if (isLoading) return;
+	isLoading = true;
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		if (!raw) return [];
-		return JSON.parse(raw);
-	} catch {
-		return [];
+		const response = await getTemplates({ limit: 100, sort: 'name' });
+		userTemplates = response.docs;
+		hasFetched = true;
+	} catch (err) {
+		console.error('Failed to fetch templates:', err);
+		hasFetched = true;
+	} finally {
+		isLoading = false;
 	}
 }
 
-function saveUserTemplates(templates: TicketTemplate[]) {
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+function dataUrlToFile(dataUrl: string, filename: string): File {
+	const [header, base64] = dataUrl.split(',');
+	const mime = header.match(/:(.*?);/)?.[1] ?? 'image/png';
+	const bytes = atob(base64);
+	const arr = new Uint8Array(bytes.length);
+	for (let i = 0; i < bytes.length; i++) {
+		arr[i] = bytes.charCodeAt(i);
+	}
+	return new File([arr], filename, { type: mime });
 }
 
-export function getAllTemplates(): TicketTemplate[] {
-	return [...BUILT_IN_TEMPLATES, ...loadUserTemplates()];
-}
-
-export function getTemplate(id: string): TicketTemplate | undefined {
-	return getAllTemplates().find((t) => t.id === id);
-}
-
-export function saveTemplate(
+export async function saveTemplateToBackend(
 	name: string,
-	backgroundImage: string | null,
+	backgroundImageDataUrl: string | null,
 	ticketSettings: TicketSettings,
-	elements: import('$lib/types/ticket').TicketElement[],
-	labelBlockWidth: number | null
-): TicketTemplate {
-	const template: TicketTemplate = {
-		id: `user-${Date.now()}`,
+	elements: TicketElement[],
+	labelConfig: LabelConfig,
+	csvData: Record<string, string>[],
+	csvHeaders: string[]
+): Promise<PayloadTicketTemplate> {
+	let backgroundImageId: number | null = null;
+
+	if (backgroundImageDataUrl) {
+		const file = dataUrlToFile(backgroundImageDataUrl, `template-bg-${Date.now()}.png`);
+		const media = await uploadBackgroundImage(file);
+		backgroundImageId = media.id;
+	}
+
+	const template = await createTemplate({
 		name,
-		builtIn: false,
-		backgroundImage,
-		ticketSettings: { ...ticketSettings },
+		backgroundImage: backgroundImageId,
+		ticketSettings,
 		elements: JSON.parse(JSON.stringify(elements)),
-		labelBlock: labelBlockWidth ? { width: labelBlockWidth } : null
-	};
-	const userTemplates = loadUserTemplates();
-	userTemplates.push(template);
-	saveUserTemplates(userTemplates);
+		labelConfig,
+		csvData: csvData.length > 0 ? csvData : null,
+		csvHeaders: csvHeaders.length > 0 ? csvHeaders : null
+	});
+
+	userTemplates = [...userTemplates, template];
 	return template;
 }
 
-export function deleteTemplate(id: string) {
-	const userTemplates = loadUserTemplates().filter((t) => t.id !== id);
-	saveUserTemplates(userTemplates);
+export async function deleteTemplateFromBackend(id: number): Promise<void> {
+	await deleteTemplateById(id);
+	userTemplates = userTemplates.filter((t) => t.id !== id);
 }

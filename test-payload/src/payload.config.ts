@@ -10,6 +10,7 @@ import { Media } from './collections/Media'
 import { Posts } from './collections/Post'
 import { Events } from './collections/Event'
 import { Messages } from './collections/Message'
+import { TicketTemplates } from './collections/TicketTemplate'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -22,7 +23,7 @@ export default buildConfig({
     },
   },
   cors: ['http://localhost:5173', 'http://localhost:4173'],
-  collections: [Users, Media, Posts, Events, Messages],
+  collections: [Users, Media, Posts, Events, Messages, TicketTemplates],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

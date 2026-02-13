@@ -33,6 +33,19 @@ export interface PayloadMessage {
 	createdAt: string;
 }
 
+export interface PayloadTicketTemplate {
+	id: number;
+	name: string;
+	backgroundImage: PayloadMedia | number | null;
+	ticketSettings: import('./ticket').TicketSettings;
+	elements: import('./ticket').TicketElement[];
+	labelConfig: import('./ticket').LabelConfig | null;
+	csvData: Record<string, string>[] | null;
+	csvHeaders: string[] | null;
+	updatedAt: string;
+	createdAt: string;
+}
+
 export interface PaginatedResponse<T> {
 	docs: T[];
 	totalDocs: number;
