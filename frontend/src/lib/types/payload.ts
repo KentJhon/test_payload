@@ -1,3 +1,5 @@
+import type { TicketSettings, TicketElement, LabelConfig } from './ticket';
+
 export interface PayloadPost {
 	id: number;
 	title: string;
@@ -37,9 +39,9 @@ export interface PayloadTicketTemplate {
 	id: number;
 	name: string;
 	backgroundImage: PayloadMedia | number | null;
-	ticketSettings: import('./ticket').TicketSettings;
-	elements: import('./ticket').TicketElement[];
-	labelConfig: import('./ticket').LabelConfig | null;
+	ticketSettings: TicketSettings;
+	elements: TicketElement[];
+	labelConfig: LabelConfig | null;
 	csvData: Record<string, string>[] | null;
 	csvHeaders: string[] | null;
 	updatedAt: string;
