@@ -25,6 +25,14 @@ export interface PayloadUser {
 	createdAt: string;
 }
 
+export interface PayloadMessage {
+	id: number;
+	sender: string;
+	content: string;
+	updatedAt: string;
+	createdAt: string;
+}
+
 export interface PaginatedResponse<T> {
 	docs: T[];
 	totalDocs: number;
