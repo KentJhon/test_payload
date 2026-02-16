@@ -507,9 +507,4 @@
 	<!-- Hidden audio element for remote audio playback -->
 	<audio bind:this={remoteAudioEl} autoplay></audio>
 {/if}
-<<<<<<< HEAD
-</div>
-=======
 
-/* IN THE ZONE */
->>>>>>> 1926363ed4f75c93d71a713aeeca18b64519cb4e
