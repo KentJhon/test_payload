@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd test-payload && npx vitest run --config ./vitest.config.mts",
+    "test": "npm run test:frontend",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9"
+  }
+}

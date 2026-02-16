@@ -4,6 +4,12 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	test: {
+		environment: 'jsdom',
+		include: ['src/**/*.test.ts'],
+		globals: true,
+		setupFiles: ['src/test-setup.ts']
+	},
 	server: {
 		proxy: {
 			'/api': {
