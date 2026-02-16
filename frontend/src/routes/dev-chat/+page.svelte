@@ -504,8 +504,10 @@
 		</div>
 	{/if}
 
-	<!-- Hidden audio element for remote audio playback -->
+	<!-- Hidden audio element for remote audio playbackzzzz -->
 	<audio bind:this={remoteAudioEl} autoplay></audio>
 {/if}
 
+
 </div>
+
