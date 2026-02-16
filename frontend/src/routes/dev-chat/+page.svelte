@@ -508,3 +508,4 @@
 	<audio bind:this={remoteAudioEl} autoplay></audio>
 {/if}
 
+</div>
