@@ -73,6 +73,7 @@ export interface Config {
     event: Event;
     messages: Message;
     'ticket-templates': TicketTemplate;
+    'call-signals': CallSignal;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +87,7 @@ export interface Config {
     event: EventSelect<false> | EventSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     'ticket-templates': TicketTemplatesSelect<false> | TicketTemplatesSelect<true>;
+    'call-signals': CallSignalsSelect<false> | CallSignalsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -264,6 +266,29 @@ export interface TicketTemplate {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "call-signals".
+ */
+export interface CallSignal {
+  id: number;
+  callId: string;
+  from: string;
+  to: string;
+  type: 'offer' | 'answer' | 'ice-candidate' | 'hangup';
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status?: ('pending' | 'active' | 'ended') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -309,6 +334,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ticket-templates';
         value: number | TicketTemplate;
+      } | null)
+    | ({
+        relationTo: 'call-signals';
+        value: number | CallSignal;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -455,6 +484,20 @@ export interface TicketTemplatesSelect<T extends boolean = true> {
     | {
         ticketGap?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "call-signals_select".
+ */
+export interface CallSignalsSelect<T extends boolean = true> {
+  callId?: T;
+  from?: T;
+  to?: T;
+  type?: T;
+  data?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }
