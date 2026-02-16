@@ -1,4 +1,5 @@
 import type { BackgroundFitMode } from '$lib/types/ticket';
+import { markDirty } from './dirty.svelte';
 
 let zoom = $state(1);
 let backgroundImage = $state<string | null>(null);
@@ -30,6 +31,7 @@ export function getBackgroundImage() {
 
 export function setBackgroundImage(dataUrl: string | null) {
 	backgroundImage = dataUrl;
+	markDirty();
 }
 
 export function getBackgroundFitMode() {
@@ -38,4 +40,5 @@ export function getBackgroundFitMode() {
 
 export function setBackgroundFitMode(mode: BackgroundFitMode) {
 	backgroundFitMode = mode;
+	markDirty();
 }

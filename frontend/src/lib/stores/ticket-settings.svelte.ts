@@ -1,5 +1,6 @@
 import type { TicketType, BackgroundFitMode, TicketSettings } from '$lib/types/ticket';
 import { TICKET_PRESETS } from '$lib/types/ticket';
+import { markDirty } from './dirty.svelte';
 
 let settings = $state<TicketSettings>({
 	type: 'ticket',
@@ -19,15 +20,18 @@ export function setTicketType(type: TicketType) {
 		settings.width = preset.width;
 		settings.height = preset.height;
 	}
+	markDirty();
 }
 
 export function setCustomSize(width: number, height: number) {
 	settings.width = width;
 	settings.height = height;
+	markDirty();
 }
 
 export function setFitMode(mode: BackgroundFitMode) {
 	settings.fitMode = mode;
+	markDirty();
 }
 
 export function setAllSettings(s: TicketSettings) {
@@ -35,4 +39,5 @@ export function setAllSettings(s: TicketSettings) {
 	settings.width = s.width;
 	settings.height = s.height;
 	settings.fitMode = s.fitMode;
+	markDirty();
 }

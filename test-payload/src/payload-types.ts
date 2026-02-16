@@ -208,15 +208,12 @@ export interface TicketTemplate {
   id: number;
   name: string;
   backgroundImage?: (number | null) | Media;
-  ticketSettings:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  ticketSettings: {
+    type: 'ticket' | 'convention-id' | 'certificate' | 'others';
+    width: number;
+    height: number;
+    fitMode: 'cover' | 'contain' | 'stretch' | 'original';
+  };
   elements:
     | {
         [k: string]: unknown;
@@ -226,15 +223,21 @@ export interface TicketTemplate {
     | number
     | boolean
     | null;
-  labelConfig?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  labelConfig?: {
+    labelColumn?: string | null;
+    labelColors?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    labelBlockWidth?: number | null;
+    rightBlockEnabled?: boolean | null;
+    rightBlockWidth?: number | null;
+  };
   csvData?:
     | {
         [k: string]: unknown;
@@ -253,6 +256,9 @@ export interface TicketTemplate {
     | number
     | boolean
     | null;
+  printSettings?: {
+    ticketGap?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -424,11 +430,31 @@ export interface MessagesSelect<T extends boolean = true> {
 export interface TicketTemplatesSelect<T extends boolean = true> {
   name?: T;
   backgroundImage?: T;
-  ticketSettings?: T;
+  ticketSettings?:
+    | T
+    | {
+        type?: T;
+        width?: T;
+        height?: T;
+        fitMode?: T;
+      };
   elements?: T;
-  labelConfig?: T;
+  labelConfig?:
+    | T
+    | {
+        labelColumn?: T;
+        labelColors?: T;
+        labelBlockWidth?: T;
+        rightBlockEnabled?: T;
+        rightBlockWidth?: T;
+      };
   csvData?: T;
   csvHeaders?: T;
+  printSettings?:
+    | T
+    | {
+        ticketGap?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

@@ -41,9 +41,10 @@ export interface PayloadTicketTemplate {
 	backgroundImage: PayloadMedia | number | null;
 	ticketSettings: TicketSettings;
 	elements: TicketElement[];
-	labelConfig: LabelConfig | null;
+	labelConfig: LabelConfig;
 	csvData: Record<string, string>[] | null;
 	csvHeaders: string[] | null;
+	printSettings: { ticketGap: number };
 	updatedAt: string;
 	createdAt: string;
 }

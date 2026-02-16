@@ -1,13 +1,32 @@
 <script lang="ts">
 	import { getElements, setElements, clearElements } from '$lib/stores/elements.svelte';
-	import { getCsvData, getCsvHeaders, loadCSV, clearCSV } from '$lib/stores/csv.svelte';
+	import { getCsvData, getCsvHeaders, setCsvDirect, clearCSV } from '$lib/stores/csv.svelte';
 	import { getTicketSettings, setAllSettings } from '$lib/stores/ticket-settings.svelte';
 	import { getBackgroundImage, setBackgroundImage } from '$lib/stores/canvas.svelte';
 	import { getLabelConfig, setAllLabelConfig } from '$lib/stores/labels.svelte';
 	import { clearSelection } from '$lib/stores/selection.svelte';
 	import { clearHistory } from '$lib/stores/history.svelte';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { markClean, getIsDirty, getLastSavedTime, getLastSavedTemplateName } from '$lib/stores/dirty.svelte';
+	import { clearAutosave } from '$lib/stores/autosave.svelte';
+	import { getTicketGap, setTicketGap } from '$lib/stores/print-settings.svelte';
 	import type { ProjectData } from '$lib/types/ticket';
+
+	const isDirty = $derived(getIsDirty());
+	const lastSavedTime = $derived(getLastSavedTime());
+	const lastSavedTemplateName = $derived(getLastSavedTemplateName());
+
+	function formatRelativeTime(iso: string | null): string {
+		if (!iso) return '';
+		const diff = Date.now() - new Date(iso).getTime();
+		const seconds = Math.floor(diff / 1000);
+		if (seconds < 60) return 'just now';
+		const minutes = Math.floor(seconds / 60);
+		if (minutes < 60) return `${minutes}m ago`;
+		const hours = Math.floor(minutes / 60);
+		if (hours < 24) return `${hours}h ago`;
+		return `${Math.floor(hours / 24)}d ago`;
+	}
 
 	function exportProject() {
 		const project: ProjectData = {
@@ -17,7 +36,7 @@
 			csvHeaders: getCsvHeaders(),
 			backgroundImage: getBackgroundImage(),
 			ticketSettings: getTicketSettings(),
-			printSettings: { ticketGap: 2 },
+			printSettings: { ticketGap: getTicketGap() },
 			labelSettings: getLabelConfig(),
 			elements: JSON.parse(JSON.stringify(getElements()))
 		};
@@ -31,6 +50,7 @@
 		a.click();
 		URL.revokeObjectURL(url);
 
+		markClean();
 		showToast('success', 'Project exported');
 	}
 
@@ -48,9 +68,16 @@
 				setElements(project.elements);
 				setBackgroundImage(project.backgroundImage);
 				setAllLabelConfig(project.labelSettings);
+				setTicketGap(project.printSettings?.ticketGap ?? 2);
+
+				if (project.csvData && project.csvHeaders) {
+					setCsvDirect(project.csvData, project.csvHeaders);
+				}
+
 				clearHistory();
 				clearSelection();
 
+				markClean();
 				showToast('success', 'Project imported');
 			} catch {
 				showToast('error', 'Import failed', 'Invalid project file');
@@ -67,18 +94,42 @@
 		setBackgroundImage(null);
 		clearSelection();
 		clearHistory();
+		clearAutosave();
+		markClean();
 		showToast('info', 'Project cleared');
 	}
 </script>
 
 <details class="group rounded-lg border border-gray-200">
 	<summary class="flex cursor-pointer items-center justify-between p-3 text-sm font-semibold text-gray-700">
-		<span>💾 Project</span>
+		<span class="flex items-center gap-2">
+			<span>Project</span>
+			{#if isDirty}
+				<span class="inline-block h-2 w-2 rounded-full bg-amber-400" title="Unsaved changes"></span>
+			{:else if lastSavedTime}
+				<span class="inline-block h-2 w-2 rounded-full bg-emerald-400" title="Saved"></span>
+			{/if}
+		</span>
 		<svg class="h-4 w-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
 		</svg>
 	</summary>
 	<div class="space-y-2 border-t border-gray-100 p-3">
+		<!-- Dirty-state indicator -->
+		{#if isDirty}
+			<div class="flex items-center gap-1.5 rounded bg-amber-50 px-2 py-1">
+				<span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+				<span class="text-xs text-amber-700">Unsaved changes</span>
+			</div>
+		{:else if lastSavedTime}
+			<div class="flex items-center gap-1.5 rounded bg-emerald-50 px-2 py-1">
+				<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+				<span class="text-xs text-emerald-700">
+					Saved {formatRelativeTime(lastSavedTime)}{lastSavedTemplateName ? ` (${lastSavedTemplateName})` : ''}
+				</span>
+			</div>
+		{/if}
+
 		<div class="flex gap-1">
 			<button onclick={exportProject} class="flex-1 cursor-pointer rounded bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100">Export</button>
 			<label class="flex flex-1 cursor-pointer items-center justify-center rounded bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100">

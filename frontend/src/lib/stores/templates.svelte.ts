@@ -3,6 +3,7 @@ import type { PayloadTicketTemplate } from '$lib/types/payload';
 import {
 	getTemplates,
 	createTemplate,
+	updateTemplate,
 	deleteTemplateById,
 	uploadBackgroundImage
 } from '$lib/api/templates';
@@ -94,8 +95,9 @@ export async function saveTemplateToBackend(
 	elements: TicketElement[],
 	labelConfig: LabelConfig,
 	csvData: Record<string, string>[],
-	csvHeaders: string[]
-): Promise<PayloadTicketTemplate> {
+	csvHeaders: string[],
+	printSettings?: { ticketGap: number } | null
+): Promise<{ template: PayloadTicketTemplate; wasOverwrite: boolean }> {
 	let backgroundImageId: number | null = null;
 
 	if (backgroundImageDataUrl) {
@@ -104,18 +106,35 @@ export async function saveTemplateToBackend(
 		backgroundImageId = media.id;
 	}
 
-	const template = await createTemplate({
+	const payload = {
 		name,
 		backgroundImage: backgroundImageId,
 		ticketSettings,
 		elements: JSON.parse(JSON.stringify(elements)),
 		labelConfig,
 		csvData: csvData.length > 0 ? csvData : null,
-		csvHeaders: csvHeaders.length > 0 ? csvHeaders : null
-	});
+		csvHeaders: csvHeaders.length > 0 ? csvHeaders : null,
+		printSettings: printSettings ?? null
+	};
 
-	userTemplates = [...userTemplates, template];
-	return template;
+	// Check if a template with this name already exists (case-insensitive)
+	const existing = userTemplates.find(
+		(t) => t.name.toLowerCase() === name.toLowerCase()
+	);
+
+	if (existing) {
+		const template = await updateTemplate(existing.id, payload);
+		// Refetch to get fully populated relationships (e.g. backgroundImage as object, not just ID)
+		const refreshed = await getTemplates({ limit: 100, sort: 'name' });
+		userTemplates = refreshed.docs;
+		return { template, wasOverwrite: true };
+	}
+
+	const template = await createTemplate(payload);
+	// Refetch to get fully populated relationships
+	const refreshed = await getTemplates({ limit: 100, sort: 'name' });
+	userTemplates = refreshed.docs;
+	return { template, wasOverwrite: false };
 }
 
 export async function deleteTemplateFromBackend(id: number): Promise<void> {

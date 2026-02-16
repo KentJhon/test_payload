@@ -20,35 +20,39 @@ export async function getTemplateById(id: number): Promise<PayloadTicketTemplate
 export async function createTemplate(
 	data: Omit<PayloadTicketTemplate, 'id' | 'updatedAt' | 'createdAt'>
 ): Promise<PayloadTicketTemplate> {
-	return payloadFetch<PayloadTicketTemplate>('/api/ticket-templates', {
+	const res = await payloadFetch<{ doc: PayloadTicketTemplate; message: string }>('/api/ticket-templates', {
 		method: 'POST',
 		body: JSON.stringify(data),
 	});
+	return res.doc;
 }
 
 export async function updateTemplate(
 	id: number,
 	data: Partial<Omit<PayloadTicketTemplate, 'id' | 'updatedAt' | 'createdAt'>>
 ): Promise<PayloadTicketTemplate> {
-	return payloadFetch<PayloadTicketTemplate>(`/api/ticket-templates/${id}`, {
+	const res = await payloadFetch<{ doc: PayloadTicketTemplate; message: string }>(`/api/ticket-templates/${id}`, {
 		method: 'PATCH',
 		body: JSON.stringify(data),
 	});
+	return res.doc;
 }
 
 export async function deleteTemplateById(id: number): Promise<PayloadTicketTemplate> {
-	return payloadFetch<PayloadTicketTemplate>(`/api/ticket-templates/${id}`, {
+	const res = await payloadFetch<{ doc: PayloadTicketTemplate; message: string }>(`/api/ticket-templates/${id}`, {
 		method: 'DELETE',
 	});
+	return res.doc;
 }
 
 export async function uploadBackgroundImage(file: File): Promise<PayloadMedia> {
 	const formData = new FormData();
 	formData.append('file', file);
-	formData.append('alt', `Template background: ${file.name}`);
+	formData.append('_payload', JSON.stringify({ alt: `Template background: ${file.name}` }));
 
-	return payloadFetch<PayloadMedia>('/api/media', {
+	const res = await payloadFetch<{ doc: PayloadMedia; message: string }>('/api/media', {
 		method: 'POST',
 		body: formData,
 	});
+	return res.doc;
 }

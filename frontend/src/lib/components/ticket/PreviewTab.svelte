@@ -5,6 +5,7 @@
 	import { getBackgroundImage, getBackgroundFitMode } from '$lib/stores/canvas.svelte';
 	import { getLabelConfig, getUniqueLabelValues } from '$lib/stores/labels.svelte';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { getTicketGap, setTicketGap } from '$lib/stores/print-settings.svelte';
 	import { renderTicketToCanvas } from '$lib/utils/canvas-render';
 	import { calculateLayout } from '$lib/utils/print-layout';
 	import { SCALE_FACTOR } from '$lib/types/ticket';
@@ -18,7 +19,7 @@
 	const labelConfig = $derived(getLabelConfig());
 	const uniqueLabels = $derived(getUniqueLabelValues(csvData));
 
-	let gap = $state(2);
+	const gap = $derived(getTicketGap());
 	let filterLabel = $state('all');
 	let previewImages = $state<string[]>([]);
 	let generating = $state(false);
@@ -164,7 +165,7 @@
 	<div class="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-4 py-3">
 		<div class="flex items-center gap-2">
 			<label for="preview-gap" class="text-xs font-medium text-gray-600">Gap (mm):</label>
-			<input id="preview-gap" type="number" bind:value={gap} min="0" max="20" step="0.5" class="w-16 rounded border border-gray-300 px-2 py-1 text-xs" />
+			<input id="preview-gap" type="number" value={gap} oninput={(e) => setTicketGap(Number((e.target as HTMLInputElement).value))} min="0" max="20" step="0.5" class="w-16 rounded border border-gray-300 px-2 py-1 text-xs" />
 		</div>
 
 		<!-- View mode toggle -->

@@ -17,6 +17,8 @@
 	import { clearHistory } from '$lib/stores/history.svelte';
 	import { clearSelection } from '$lib/stores/selection.svelte';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { markClean, getLastSavedTemplateName } from '$lib/stores/dirty.svelte';
+	import { getTicketGap, setTicketGap } from '$lib/stores/print-settings.svelte';
 	import { BASE_URL } from '$lib/api/client';
 
 	let selectedTemplateId = $state('');
@@ -71,6 +73,7 @@
 			clearCSV();
 			clearHistory();
 			clearSelection();
+			markClean({ templateName: tmpl.name });
 			showToast('success', 'Template loaded', tmpl.name);
 			return;
 		}
@@ -109,8 +112,11 @@
 				setBackgroundImage(null);
 			}
 
+			setTicketGap(tmpl.printSettings?.ticketGap ?? 2);
+
 			clearHistory();
 			clearSelection();
+			markClean({ templateName: tmpl.name });
 			showToast('success', 'Template loaded', tmpl.name);
 		} catch (err) {
 			console.error('Failed to load template:', err);
@@ -121,21 +127,32 @@
 	}
 
 	async function saveAsCurrent() {
-		const name = prompt('Template name:');
+		const defaultName = getLastSavedTemplateName() ?? '';
+		const name = prompt('Template name:', defaultName);
 		if (!name) return;
+
+		// Check if overwriting an existing template
+		const existingMatch = backendTemplates.find(
+			(t) => t.name.toLowerCase() === name.toLowerCase()
+		);
+		if (existingMatch) {
+			if (!confirm(`A template named "${existingMatch.name}" already exists. Overwrite it?`)) return;
+		}
 
 		isSaving = true;
 		try {
-			await saveTemplateToBackend(
+			const { wasOverwrite } = await saveTemplateToBackend(
 				name,
 				getBackgroundImage(),
 				getTicketSettings(),
 				getElements(),
 				getLabelConfig(),
 				getCsvData(),
-				getCsvHeaders()
+				getCsvHeaders(),
+				{ ticketGap: getTicketGap() }
 			);
-			showToast('success', 'Template saved', name);
+			markClean({ templateName: name });
+			showToast('success', wasOverwrite ? 'Template updated' : 'Template saved', name);
 		} catch (err) {
 			console.error('Failed to save template:', err);
 			showToast('error', 'Failed to save template');
