@@ -40,7 +40,8 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch('/api/posts?limit=6&sort=-createdAt');
+			const baseUrl = import.meta.env.VITE_PAYLOAD_URL || '';
+			const res = await fetch(`${baseUrl}/api/posts?limit=6&sort=-createdAt`);
 			if (res.ok) {
 				const data: PaginatedResponse<PayloadPost> = await res.json();
 				posts = data.docs;

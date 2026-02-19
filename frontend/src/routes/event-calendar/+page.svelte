@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
+	const BASE_URL = import.meta.env.VITE_PAYLOAD_URL || '';
+
 	interface CalendarEvent {
 		id: number;
 		title: string;
@@ -149,7 +151,7 @@
 		submitting = true;
 		addError = '';
 		try {
-			const res = await fetch('/api/calendar-events', {
+			const res = await fetch(`${BASE_URL}/api/calendar-events`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -177,7 +179,7 @@
 	async function deleteEvent(id: number) {
 		deletingId = id;
 		try {
-			const res = await fetch(`/api/calendar-events/${id}`, { method: 'DELETE' });
+			const res = await fetch(`${BASE_URL}/api/calendar-events/${id}`, { method: 'DELETE' });
 			if (res.ok) {
 				await refreshEvents();
 			}
@@ -199,7 +201,7 @@
 				limit: '100',
 				sort: 'start_date',
 			});
-			const res = await fetch(`/api/calendar-events?${params}`);
+			const res = await fetch(`${BASE_URL}/api/calendar-events?${params}`);
 			if (res.ok) {
 				const json = await res.json();
 				localEvents = json.docs;

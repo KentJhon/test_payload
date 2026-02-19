@@ -1,5 +1,7 @@
 import type { PageServerLoad } from './$types';
 
+const BASE_URL = import.meta.env.VITE_PAYLOAD_URL || '';
+
 export const load: PageServerLoad = async ({ fetch, url }) => {
 	const month = parseInt(url.searchParams.get('month') ?? String(new Date().getMonth()));
 	const year = parseInt(url.searchParams.get('year') ?? String(new Date().getFullYear()));
@@ -19,7 +21,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 			sort: 'start_date',
 		});
 
-		const res = await fetch(`/api/calendar-events?${params}`);
+		const res = await fetch(`${BASE_URL}/api/calendar-events?${params}`);
 		if (res.ok) {
 			const data = await res.json();
 			return { events: data.docs, month, year };

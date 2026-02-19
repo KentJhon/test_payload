@@ -2,7 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 
-	const PAYLOAD_URL = import.meta.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000';
+	const PAYLOAD_URL = import.meta.env.VITE_PAYLOAD_URL || '';
 
 	let { data } = $props();
 	const event = $derived(data.event);
