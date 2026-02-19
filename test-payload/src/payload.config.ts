@@ -57,17 +57,12 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    (() => {
-      const token = process.env.BLOB_READ_WRITE_TOKEN
-      console.log('[BLOB DEBUG] Token exists:', !!token, 'Length:', token?.length ?? 0)
-      return token
-        ? vercelBlobStorage({
-            collections: {
-              media: true,
-            },
-            token,
-          })
-        : undefined
-    })(),
-  ].filter(Boolean) as any[],
+    vercelBlobStorage({
+      enabled: !!process.env.BLOB_READ_WRITE_TOKEN,
+      collections: {
+        media: true,
+      },
+      token: process.env.BLOB_READ_WRITE_TOKEN || '',
+    }),
+  ],
 })
