@@ -26,8 +26,8 @@ let signalingPollTimer: ReturnType<typeof setInterval> | null = null;
 let lastSignalTimestamp = '';
 let pendingIceCandidates: RTCIceCandidate[] = [];
 
-const TURN_USERNAME = import.meta.env.VITE_TURN_USERNAME || '';
-const TURN_CREDENTIAL = import.meta.env.VITE_TURN_CREDENTIAL || '';
+const TURN_USERNAME = import.meta.env.VITE_TURN_USERNAME || '0c782aad76217666ce016921';
+const TURN_CREDENTIAL = import.meta.env.VITE_TURN_CREDENTIAL || 'lh40mmDiOIO5wyVy';
 
 const RTC_CONFIG: RTCConfiguration = {
 	iceServers: [
