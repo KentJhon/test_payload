@@ -1,6 +1,6 @@
 // In dev, use empty string so requests go through Vite proxy (/api → localhost:3000).
 // In prod, set PUBLIC_PAYLOAD_URL to the actual backend URL.
-export const BASE_URL = import.meta.env.PUBLIC_PAYLOAD_URL || '';
+export const BASE_URL = (import.meta.env.PUBLIC_PAYLOAD_URL as string)?.trim() || '';
 
 export async function payloadFetch<T>(
 	endpoint: string,

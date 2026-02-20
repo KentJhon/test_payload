@@ -31,7 +31,7 @@ const PING_INTERVAL = 2000;
 
 function getWsUrl(): string {
 	if (typeof window === 'undefined') return '';
-	const envUrl = (import.meta.env as Record<string, string>).PUBLIC_WS_URL;
+	const envUrl = (import.meta.env as Record<string, string>).PUBLIC_WS_URL?.trim();
 	if (envUrl) return envUrl.replace(/\/ws$/, '/ws/snake');
 	const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 	return `${proto}//${window.location.host}/ws/snake`;
